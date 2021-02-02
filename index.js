@@ -10,16 +10,16 @@ let pairs = {};
 
 console.log(`DEVMODE: ${DEV}`);
 
-const setApiKeySecret = () => {
+(() => {
     if(DEV){
         APIKEY = secrets.DEV.APIKEY;
         APISECRET = secrets.DEV.APISECRET  ;
     } else {
         APIKEY = secrets.PROD.APIKEY;
         APISECRET = secrets.PROD.APISECRET;
-    }
-}
-setApiKeySecret();
+    }  
+})()
+
 
 const setTestUrls = (isDev) => {
     if(isDev){
