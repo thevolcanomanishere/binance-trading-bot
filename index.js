@@ -1,18 +1,22 @@
 const Binance = require('node-binance-api');
 const log = require('single-line-log').stdout;
 const secrets = require('./secrets.json');
+const fs = require('fs');
 
 let APIKEY;
 let APISECRET;
 
 const DEV = false;
 let pairs = {};
+let minimums = {};
 
 const shitCoinTicker = process.argv[2];
 console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
 
 //Track how much we have bought. Subtract each time there is a sale
 let cryptoQuantity;
+let initialCryptoQuantity;
+let currentCryptoQuantity;
 let previousStopLossOrderId = 0;
 
 console.log(`DEVMODE: ${DEV}`);
@@ -84,7 +88,6 @@ const getPriceInfo = (pair) => {
     })
 }
 
-
 /**
  * Returns crypto amount worth in dollars
  * @param {*} tickerSymbol - The crypto you want
@@ -135,6 +138,7 @@ const setStopLoss = (orderPrice, pair) => {
     });
 }
 
+
 // Enter ticker to buy. Get amount in btc to purchase. Set stop loss.
 // set milestone % profit take + stop loss when order fulfilled
 const yoloTron5000 = (tickerSymbol) => {
@@ -146,42 +150,42 @@ const yoloTron5000 = (tickerSymbol) => {
         if(doesPairExistWithBtc(pair)){
             // calculate how many crypto you can buy with $100 in btc
             const quantity = btcInDollars / priceOfCrypto;
-            cryptoQuantity = quantity;
+            initialCryptoQuantity = quantity;
             return getPriceInfo(pair).then(data => {
                 const initialPrice = data.bidPrice;
                 return binance.buy(pair, quantity, initialPrice, {type:'LIMIT'}, (error, response) => {
                     if(response.status === "FILLED"){
                         setStopLoss(initialPrice, pair);
-                        cryptoQuantity = response.exeutedQty;
+                        initialCryptoQuantity = response.executedQty;
                         // Setup profit taking and stop losses in callbacks
                         let profitPrice = getLimitOrderPrice(initialPrice, 50);
-                        binance.buy(pair, cryptoQuantity * 0.1, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
-                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        binance.buy(pair, initialCryptoQuantity * 0.1, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
                             setStopLoss(response.price, pair);
                         });
 
                         profitPrice = getLimitOrderPrice(initialPrice, 100);
-                        binance.buy(pair, cryptoQuantity * 0.1, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
-                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        binance.buy(pair, initialCryptoQuantity * 0.1, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
                             setStopLoss(response.price, pair);
                         });
 
                         profitPrice = getLimitOrderPrice(initialPrice, 150);
-                        binance.buy(pair, cryptoQuantity * 0.20, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
-                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        binance.buy(pair, initialCryptoQuantity * 0.20, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
                             setStopLoss(response.price, pair);
                         });
 
                         profitPrice = getLimitOrderPrice(initialPrice, 200);
-                        binance.buy(pair, cryptoQuantity * 0.30, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
-                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        binance.buy(pair, initialCryptoQuantity * 0.30, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
                             setStopLoss(response.price, pair);
                         });
 
                         //sell it all
                         profitPrice = getLimitOrderPrice(initialPrice, 300);
-                        return binance.buy(pair, cryptoQuantity, initialPrice, {type:'TAKE_PROFIT'}, (error, response) => {
-                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        return binance.buy(pair, initialCryptoQuantity, initialPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
                             setStopLoss(response.price, pair);
                         });
 
@@ -199,4 +203,30 @@ const yoloTron5000 = (tickerSymbol) => {
 // getCryptoAmountInDollars("BTC", 100).then(data => console.log(data))
 // getAllPairs();
 
+return binance.exchangeInfo(function(error, data) {
+	let minimums = {};
+	for ( let obj of data.symbols ) {
+		let filters = {status: obj.status};
+		for ( let filter of obj.filters ) {
+			if ( filter.filterType == "MIN_NOTIONAL" ) {
+				filters.minNotional = filter.minNotional;
+			} else if ( filter.filterType == "PRICE_FILTER" ) {
+				filters.minPrice = filter.minPrice;
+				filters.maxPrice = filter.maxPrice;
+				filters.tickSize = filter.tickSize;
+			} else if ( filter.filterType == "LOT_SIZE" ) {
+				filters.stepSize = filter.stepSize;
+				filters.minQty = filter.minQty;
+				filters.maxQty = filter.maxQty;
+			}
+		}
+		//filters.baseAssetPrecision = obj.baseAssetPrecision;
+		//filters.quoteAssetPrecision = obj.quoteAssetPrecision;
+		filters.orderTypes = obj.orderTypes;
+		filters.icebergAllowed = obj.icebergAllowed;
+		minimums[obj.symbol] = filters;
+	}
+	console.log(minimums);
+	global.filters = minimums;
+});
 
