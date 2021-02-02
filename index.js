@@ -9,10 +9,12 @@ const DEV = true;
 
 console.log(`DEVMODE: ${DEV}`);
 
+console.log(secrets.DEV.APIKEY);
+
 const setApiKeySecret = () => {
     if(DEV){
         APIKEY = secrets.DEV.APIKEY;
-        APISECRET = secrets.PROD.APISECRET  ;
+        APISECRET = secrets.DEV.APISECRET  ;
     } else {
         APIKEY = secrets.PROD.APIKEY;
         APISECRET = secrets.PROD.APISECRET;
@@ -55,10 +57,18 @@ const getBalance = async() => {
     await binance.useServerTime();
     binance.balance((error, balances) => {
         if ( error ) return console.error(error);
-        console.info("balances()", balances);
-        console.info("ETH balance: ", balances.ETH.available);
+        console.log(balances)
+        return balances;
     });
 }
+
+getBalance()
+
+// const getCryptoAmountInEuro = async (tickerSymbol, euroAmount) => {
+//     const balances = await getBalance();
+// }
+
+
 
 
 // getBalance()
@@ -73,8 +83,8 @@ const getBalance = async() => {
 // });
 
 
-const stopLossPrice = getStopLossPrice(0.00145290, 1);
-console.log(stopLossPrice);
-const limitOrderPrice = getLimitOrderPrice(0.00145290, 10)
-console.log(limitOrderPrice);
+// const stopLossPrice = getStopLossPrice(0.00145290, 1);
+// console.log(stopLossPrice);
+// const limitOrderPrice = getLimitOrderPrice(0.00145290, 10)
+// console.log(limitOrderPrice);
 
