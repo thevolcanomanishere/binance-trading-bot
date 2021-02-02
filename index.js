@@ -177,7 +177,7 @@ const yoloTron5000 = (tickerSymbol) => {
 
                         //sell it all
                         profitPrice = getLimitOrderPrice(initialPrice, 300);
-                        binance.buy(pair, cryptoQuantity, initialPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                        return binance.buy(pair, cryptoQuantity, initialPrice, {type:'TAKE_PROFIT'}, (error, response) => {
                             cryptoQuantity = cryptoQuantity - response.exeutedQty;
                             setStopLoss(response.price, pair);
                         });
