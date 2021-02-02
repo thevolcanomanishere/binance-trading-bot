@@ -14,16 +14,13 @@ let previousStopLossOrderId = 0;
 
 console.log(`DEVMODE: ${DEV}`);
 
-(() => {
-    if(DEV){
-        APIKEY = secrets.DEV.APIKEY;
-        APISECRET = secrets.DEV.APISECRET  ;
-    } else {
-        APIKEY = secrets.PROD.APIKEY;
-        APISECRET = secrets.PROD.APISECRET;
-    }  
-})()
-
+if(DEV){
+    APIKEY = secrets.DEV.APIKEY;
+    APISECRET = secrets.DEV.APISECRET  ;
+} else {
+    APIKEY = secrets.PROD.APIKEY;
+    APISECRET = secrets.PROD.APISECRET;
+}  
 
 const setTestUrls = (isDev) => {
     if(isDev){
