@@ -10,7 +10,9 @@ const DEV = true;
 let pairs = {};
 let minimums = {};
 
-const shitCoinTicker = process.argv[2];
+const amountInDollarsToBuy = process.argv[2];
+const shitCoinTicker = process.argv[3];
+
 console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
 
 //Track how much we have bought. Subtract each time there is a sale
@@ -180,7 +182,7 @@ const generateRoundedQuantity = (btcInDollars, initialPrice, precisionData) => {
 // set milestone % profit take + stop loss when order fulfilled
 const yoloTron5000 = (tickerSymbol) => {
     // Find out how much $100 is in btc'
-    return getCryptoAmountInDollars("BTC", 100).then(data => {
+    return getCryptoAmountInDollars("BTC", amountInDollarsToBuy).then(data => {
         const btcInDollars = data;
         const pair = tickerSymbol + "BTC";
         // Check if the input ticker is valid
