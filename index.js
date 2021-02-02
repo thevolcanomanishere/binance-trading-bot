@@ -39,26 +39,6 @@ const binance = new Binance().options({
   urls: setTestUrls(DEV)
 });
 
-const getBalance = async() => {
-    await binance.useServerTime();
-    binance.balance((error, balances) => {
-        if ( error ) return console.error(error);
-        console.info("balances()", balances);
-        console.info("ETH balance: ", balances.ETH.available);
-    });
-}
-
-// getBalance()
-
-// binance.bookTickers('BNBBTC', (error, ticker) => {
-//     console.info("bookTickers", ticker);
-//     // console.log(ticker.askPrice)
-//     binance.buy("BNBBTC", 0.01, ticker.askPrice, {type:'LIMIT'}, (error, response) => {
-//         console.info("Limit Buy response", response);
-//         console.info("order id: " + response.orderId);
-//     });
-// });
-
 const getStopLossPrice = (orderPrice, percentage) => {
     const onePercent = orderPrice / 100;
     const priceDiff = onePercent * percentage;
@@ -71,14 +51,30 @@ const getLimitOrderPrice = (orderPrice, percentage) => {
     return orderPrice + priceDiff;
 }
 
+const getBalance = async() => {
+    await binance.useServerTime();
+    binance.balance((error, balances) => {
+        if ( error ) return console.error(error);
+        console.info("balances()", balances);
+        console.info("ETH balance: ", balances.ETH.available);
+    });
+}
+
+
+// getBalance()
+
+// binance.bookTickers('BNBBTC', (error, ticker) => {
+//     console.info("bookTickers", ticker);
+//     // console.log(ticker.askPrice)
+//     binance.buy("BNBBTC", 0.01, ticker.askPrice, {type:'LIMIT'}, (error, response) => {
+//         console.info("Limit Buy response", response);
+//         console.info("order id: " + response.orderId);
+//     });
+// });
+
+
 const stopLossPrice = getStopLossPrice(0.00145290, 1);
 console.log(stopLossPrice);
 const limitOrderPrice = getLimitOrderPrice(0.00145290, 10)
 console.log(limitOrderPrice);
-
-// binance.marketBuy("BNBBTC", 0.0025, (err, resp) => {
-//     console.log(err);
-//     console.log(resp)
-// });
-
 
