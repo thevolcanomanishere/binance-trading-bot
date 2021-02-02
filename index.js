@@ -5,11 +5,10 @@ const secrets = require('./secrets.json');
 let APIKEY;
 let APISECRET
 
-const DEV = true;
+const DEV = false;
+let pairs = {};
 
 console.log(`DEVMODE: ${DEV}`);
-
-console.log(secrets.DEV.APIKEY);
 
 const setApiKeySecret = () => {
     if(DEV){
@@ -22,7 +21,7 @@ const setApiKeySecret = () => {
 }
 setApiKeySecret();
 
-setTestUrls = (isDev) => {
+const setTestUrls = (isDev) => {
     if(isDev){
         return {
             base: 'https://testnet.binance.vision/api/',
@@ -53,20 +52,55 @@ const getLimitOrderPrice = (orderPrice, percentage) => {
     return orderPrice + priceDiff;
 }
 
-const getBalance = async() => {
-    await binance.useServerTime();
-    binance.balance((error, balances) => {
-        if ( error ) return console.error(error);
-        console.log(balances)
-        return balances;
-    });
+const getAllPairs = () => {
+    return binance.prices().then(data => {
+        console.log(data);
+        return data;
+    })
+};
+
+const getSinglePair = (pairTicker) => {
+    return binance.prices().then(data => {
+        return data[pairTicker];
+    })
+};
+
+const getAccountBalance = () => {
+    return binance.balance().then(data => {
+        return data;
+    })
 }
 
-getBalance()
 
-// const getCryptoAmountInEuro = async (tickerSymbol, euroAmount) => {
-//     const balances = await getBalance();
-// }
+/**
+ * Returns crypto amount worth in dollars
+ * @param {*} tickerSymbol - The crypto you want
+ * @param {*} dollarAmount - The total in dollars
+ */
+const getCryptoAmountInDollars = (tickerSymbol, dollarAmount) => {
+    return getAccountBalance().then(balance => {
+        if(balance[tickerSymbol] && balance[tickerSymbol].available > 0){
+            const pair = tickerSymbol + "USDT";
+            return getSinglePair(pair).then(data => {
+                console.log(`Pair data: ${data}`);
+                return dollarAmount / data;
+            })
+        } else {
+            console.log("You don't have enough balance")
+        }
+    })
+};
+
+
+// getSinglePair("BTCUSDT").then(data => console.log(data))
+// getAccountBalance().then(data => console.log(data))
+// getCryptoAmountInDollars("BTC", 100).then(data => console.log(data))
+// getAllPairs();
+
+
+// getCryptoAmountInDollars("BTC", 100).then(data => {
+//     console.log(data);
+// })
 
 
 
@@ -88,3 +122,5 @@ getBalance()
 // const limitOrderPrice = getLimitOrderPrice(0.00145290, 10)
 // console.log(limitOrderPrice);
 
+// first check how much bitcoin in dollars
+// then get how much bitcoin is needed
