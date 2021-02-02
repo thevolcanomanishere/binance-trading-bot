@@ -191,7 +191,7 @@ const yoloTron5000 = (tickerSymbol) => {
             // calculate how many crypto you can buy with $100 in btc
             return getPriceInfo(pair).then(data2 => {
                 console.log('got price info', data2);
-                const initialPrice = data2.askPrice; // CHANGE THIS BACK TO bidPrice
+                const initialPrice = data2.bidPrice; // CHANGE THIS BACK TO bidPrice
                 return getTickerPrecisionData(pair).then((precisionData) => {
                     quantity = generateRoundedQuantity(btcInDollars, initialPrice, precisionData);
                     console.log('btc in dollars', btcInDollars);
