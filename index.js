@@ -8,6 +8,9 @@ let APISECRET;
 const DEV = false;
 let pairs = {};
 
+const shitCoinTicker = process.argv[2];
+console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
+
 //Track how much we have bought. Subtract each time there is a sale
 let cryptoQuantity;
 let previousStopLossOrderId = 0;
