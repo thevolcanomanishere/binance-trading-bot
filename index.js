@@ -8,6 +8,9 @@ let APISECRET
 const DEV = false;
 let pairs = {};
 
+//Track how much we have bought. Subtract each time there is a sale
+let cryptoQuantity;
+
 console.log(`DEVMODE: ${DEV}`);
 
 (() => {
@@ -54,10 +57,12 @@ const getLimitOrderPrice = (orderPrice, percentage) => {
 
 const getAllPairs = () => {
     return binance.prices().then(data => {
-        console.log(data);
-        return data;
+        // console.log(data);
+        pairs = data;
     })
 };
+
+getAllPairs();
 
 const getSinglePair = (pairTicker) => {
     return binance.prices().then(data => {
@@ -67,6 +72,13 @@ const getSinglePair = (pairTicker) => {
 
 const getAccountBalance = () => {
     return binance.balance().then(data => {
+        return data;
+    })
+}
+
+const getPriceInfo = (pair) => {
+    return binance.bookTickers(pair).then((err, data) => {
+        if(err) return console.log(err);
         return data;
     })
 }
@@ -91,36 +103,70 @@ const getCryptoAmountInDollars = (tickerSymbol, dollarAmount) => {
     })
 };
 
+const subscribeToTrades = (tickerSymbolPair) => {
+    binance.websockets.trades([tickerSymbolPair], (trades) => {
+        let {e:eventType, E:eventTime, s:symbol, p:price, q:quantity, m:maker, a:tradeId} = trades;
+        console.info(symbol+" trade update. price: "+price+", quantity: "+quantity+", maker: "+maker);
+    });
+};
 
+const doesPairExistWithBtc = (pair) => {
+    if(pairs[pair]){
+        return true;
+    }
+    return false;
+}
+
+const setStopLoss = (orderPrice, pair) => {
+    const stopLossPrice = getStopLossPrice(orderPrice, 1);
+    let type = "STOP_LOSS";
+    return binance.sell(pair, cryptoQuantity, orderPrice, {stopPrice: stopLossPrice, type: type}, (err, resp) => {
+        if(!err){
+            console.log("First stop loss set")
+        }
+    });
+}
+
+// Enter ticker to buy. Get amount in btc to purchase. Set stop loss.
+// set milestone % profit take + stop loss when order fulfilled
+const yoloTron5000 = (tickerSymbol) => {
+    // Find out how much $100 is in btc
+    return getCryptoAmountInDollars("BTC", 100).then(data => {
+        const btcInDollars = data;
+        const pair = tickerSymbol + "BTC";
+        // Check if the input ticker is valid
+        if(doesPairExistWithBtc(pair)){
+            // calculate how many crypto you can buy with $100 in btc
+            const quantity = btcInDollars / priceOfCrypto;
+            cryptoQuantity = quantity;
+            return getPriceInfo(pair).then(data => {
+                const price = data.bidPrice;
+                return binance.buy(pair, quantity, price, {type:'LIMIT'}, (error, response) => {
+                    if(response.status === "FILLED"){
+                        setStopLoss(price, pair);
+                        cryptoQuantity = response.exeutedQty;
+                        // Setup profit taking and stop losses in callbacks
+                        let profitPrice = getLimitOrderPrice(orderPrice, 50);
+                        binance.buy(pair, cryptoQuantity * 0.1, profitPrice, {type:'TAKE_PROFIT'}, (error, response) => {
+                            cryptoQuantity = cryptoQuantity - response.exeutedQty;
+                        });
+                        binance.buy(pair, quantity, price, {type:'TAKE_PROFIT'}, (error, response) => {});
+                        binance.buy(pair, quantity, price, {type:'TAKE_PROFIT'}, (error, response) => {});
+                        binance.buy(pair, quantity, price, {type:'TAKE_PROFIT'}, (error, response) => {});
+                        binance.buy(pair, quantity, price, {type:'TAKE_PROFIT'}, (error, response) => {});
+
+                    }
+                });
+            })
+        }
+        console.log(`Pair ${pair} does not exist`);
+    })
+}
+
+//// TEST FUNCTIONS
 // getSinglePair("BTCUSDT").then(data => console.log(data))
 // getAccountBalance().then(data => console.log(data))
 // getCryptoAmountInDollars("BTC", 100).then(data => console.log(data))
 // getAllPairs();
 
 
-// getCryptoAmountInDollars("BTC", 100).then(data => {
-//     console.log(data);
-// })
-
-
-
-
-// getBalance()
-
-// binance.bookTickers('BNBBTC', (error, ticker) => {
-//     console.info("bookTickers", ticker);
-//     // console.log(ticker.askPrice)
-//     binance.buy("BNBBTC", 0.01, ticker.askPrice, {type:'LIMIT'}, (error, response) => {
-//         console.info("Limit Buy response", response);
-//         console.info("order id: " + response.orderId);
-//     });
-// });
-
-
-// const stopLossPrice = getStopLossPrice(0.00145290, 1);
-// console.log(stopLossPrice);
-// const limitOrderPrice = getLimitOrderPrice(0.00145290, 10)
-// console.log(limitOrderPrice);
-
-// first check how much bitcoin in dollars
-// then get how much bitcoin is needed
