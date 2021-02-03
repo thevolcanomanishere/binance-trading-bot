@@ -6,7 +6,7 @@ const fs = require('fs');
 let APIKEY;
 let APISECRET;
 
-const DEV = true;
+const DEV = false;
 let pairs = {};
 let minimums = {};
 
@@ -184,7 +184,6 @@ const generateRoundedQuantity = (btcInDollars, initialPrice, precisionData) => {
 
 const createRoundedQuantity = (unroundedQuantity, precisionData, price) => {
     const { minQty, minNotional, stepSize } = precisionData;
-    let amount;
 
     if ( unroundedQuantity < minQty ) {
         return minQty;
@@ -192,11 +191,11 @@ const createRoundedQuantity = (unroundedQuantity, precisionData, price) => {
 
     // Set minimum order amount with minNotional
     if ( unroundedQuantity < minNotional ) {
-        amount = minNotional / price;
+        return minNotional / price;
     }
 
     // Round to stepSize
-    return amount = binance.roundStep(amount, stepSize);
+    return binance.roundStep(unroundedQuantity, stepSize);
 
 }
 
