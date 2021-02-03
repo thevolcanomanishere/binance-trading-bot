@@ -331,7 +331,12 @@ binance.websockets.userData((err, resp) => {
         default:
         break;
     }
-})
+});
+
+// const amountInDollarsToBuy = process.argv[2];
+// const shitCoinTicker = process.argv[3];
+
+yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
 
 // binance.prevDay("ETHBTC", (error, prevDay, symbol) => {
 //     console.info(symbol+" previous day:", prevDay);
