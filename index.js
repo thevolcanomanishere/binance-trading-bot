@@ -140,6 +140,7 @@ const doesPairExistWithBtc = (pair) => {
 const setStopLoss = (orderPrice, pair) => {
     const stopLossPrice = getStopLossPrice(orderPrice, 1);
     let type = "STOP_LOSS";
+    console.log('settng stop loss at price', stopLossPrice);
     return binance.sell(pair, cryptoQuantity, orderPrice, {stopPrice: stopLossPrice, type: type}, (err, resp) => {
         if(!err){
             if(previousStopLossOrderId !== 0){
@@ -298,14 +299,14 @@ binance.websockets.userData((err, resp) => {
 }, (resp) => {
     console.log('resp', resp);
 
-    const status = resp.X;
+    const status = resp.x;
     const side = resp.S;
     const type = resp.o;
     const quantity = resp.q;
-    const price = resp.p;
+    const price = resp.L;
     const pair = resp.s;
 
-    console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
+    console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}\nQUANT: ${quantity}\nPRICE: ${price}`)
 
     switch (status) {
         case "NEW":
@@ -313,7 +314,7 @@ binance.websockets.userData((err, resp) => {
         case "REPLACED":
         case "REJECTED":
         case "TRADE":
-            if(side === "BUY"){
+            if(side === "BUY" && price > 0){
                 setStopLoss(price, pair);
                 binance.sell(pair, quantity, price * 2, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
                     if (error) {
