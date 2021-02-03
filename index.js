@@ -226,40 +226,41 @@ const yoloTron5000 = (tickerSymbol) => {
                     console.log('buying quantity', roundedQuantity);
                     console.log('initialPrice', initialPrice);
                     initialCryptoQuantity = roundedQuantity;
-                    return binance.buy(pair, roundedQuantity, initialPrice, {type:'LIMIT' }, (error, response) => {
-                        console.log('binance.buy response', response);
-                        if (error) {
-                            console.log('binance.buy error statusCode', error.statusCode);
-                            console.log('binance.buy error body', error.body);
-                        }
-                        if(response.status === "FILLED"){
-                            setStopLoss(initialPrice, pair);
-                            initialCryptoQuantity = response.executedQty;
-                            // Setup profit taking and stop losses in callbacks
-                            let profitPrice = getLimitOrderPrice(initialPrice, 2, tickSize);
-                            let roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
-                            binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
-                                if (error) {
-                                    console.log('binance.sell error statusCode', error.statusCode);
-                                    console.log('binance.sell error body', error.body);
-                                    return;
-                                }
-                                console.log(`First sell: ${response}`)
-                                currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
-                                setStopLoss(response.price, pair);
-                            });
+                    return binance.marketBuy(pair, roundedQuantity);
+                    // return binance.buy(pair, roundedQuantity, initialPrice, {type:'LIMIT' }, (error, response) => {
+                    //     console.log('binance.buy response', response);
+                    //     if (error) {
+                    //         console.log('binance.buy error statusCode', error.statusCode);
+                    //         console.log('binance.buy error body', error.body);
+                    //     }
+                    //     if(response.status === "FILLED"){
+                    //         setStopLoss(initialPrice, pair);
+                    //         initialCryptoQuantity = response.executedQty;
+                    //         // Setup profit taking and stop losses in callbacks
+                    //         let profitPrice = getLimitOrderPrice(initialPrice, 2, tickSize);
+                    //         let roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
+                    //         binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
+                    //             if (error) {
+                    //                 console.log('binance.sell error statusCode', error.statusCode);
+                    //                 console.log('binance.sell error body', error.body);
+                    //                 return;
+                    //             }
+                    //             console.log(`First sell: ${response}`)
+                    //             currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
+                    //             setStopLoss(response.price, pair);
+                    //         });
 
-                            profitPrice = getLimitOrderPrice(initialPrice, 4, tickSize);
-                            roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
-                            return binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
-                                if (error) {
-                                    console.log('binance.sell error statusCode', error.statusCode);
-                                    console.log('binance.sell error body', error.body);
-                                    return;
-                                }
-                                console.log(`Second sell: ${response}`)
-                                currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
-                            });
+                    //         profitPrice = getLimitOrderPrice(initialPrice, 4, tickSize);
+                    //         roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
+                    //         return binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
+                    //             if (error) {
+                    //                 console.log('binance.sell error statusCode', error.statusCode);
+                    //                 console.log('binance.sell error body', error.body);
+                    //                 return;
+                    //             }
+                    //             console.log(`Second sell: ${response}`)
+                    //             currentCryptoQuantity = currentCryptoQuantity - response.executedQty;
+                    //         });
 
                             // profitPrice = getLimitOrderPrice(initialPrice, 150, tickSize);
                             // binance.sell(pair, initialCryptoQuantity * 0.20, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
@@ -280,8 +281,8 @@ const yoloTron5000 = (tickerSymbol) => {
                             //     setStopLoss(response.price, pair);
                             // });
 
-                        }
-                    });
+                    //     }
+                    // });
 
                 });
             })
@@ -303,6 +304,7 @@ binance.websockets.userData((err, resp) => {
     const type = resp.o;
     const quantity = resp.q;
     const price = resp.p;
+    const pair = resp.s;
 
     console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
 
@@ -312,8 +314,27 @@ binance.websockets.userData((err, resp) => {
         case "REPLACED":
         case "REJECTED":
         case "TRADE":
+            if(side === "BUY"){
+                setStopLoss(price, pair);
+                binance.sell(pair, quantity, price * 2, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
+                    if (error) {
+                        console.log('binance.sell error statusCode', error.statusCode);
+                        console.log('binance.sell error body', error.body);
+                        return;
+                    }
+                    console.log(`Second sell: ${response}`)
+                });
+            } else {
+                
+            }
         case "EXPIRED":
         default:
         break;
     }
 })
+
+// binance.prevDay("ETHBTC", (error, prevDay, symbol) => {
+//     console.info(symbol+" previous day:", prevDay);
+//     // console.info("BNB change since yesterday: "+prevDay+"%")
+//     console.log(prevDay.priceChangePercent)
+//   });
