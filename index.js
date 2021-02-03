@@ -14,6 +14,7 @@ const amountInDollarsToBuy = process.argv[2];
 const shitCoinTicker = process.argv[3];
 
 console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
+console.log(`DOLLAR AMOUNT: ${amountInDollarsToBuy}`);
 
 //Track how much we have bought. Subtract each time there is a sale
 let cryptoQuantity;
@@ -106,7 +107,7 @@ const getPriceInfo = (pair) => {
 const getCryptoAmountInDollars = (tickerSymbol, dollarAmount) => {
     console.log('Getting account balance');
     return getAccountBalance().then(balance => {
-        console.log('balance', balance);
+        console.log('Balanced retrieved');
         if(balance[tickerSymbol] && balance[tickerSymbol].available > 0){
             const pair = tickerSymbol + "USDT";
             return getSinglePair(pair).then(data => {
@@ -183,7 +184,9 @@ const generateRoundedQuantity = (btcInDollars, initialPrice, precisionData) => {
 }
 
 const createRoundedQuantity = (unroundedQuantity, precisionData, price) => {
-    const { minQty, minNotional, stepSize } = precisionData;
+
+    const { minQty, stepSize } = precisionData.filters.find(f => f.filterType === "LOT_SIZE");
+    const { minNotional } = precisionData.filters.find(f => f.filterType === "MIN_NOTIONAL")
 
     if ( unroundedQuantity < minQty ) {
         return minQty;
@@ -215,7 +218,7 @@ const yoloTron5000 = (tickerSymbol) => {
                 const initialPrice = priceInfo.bidPrice; // CHANGE THIS BACK TO bidPrice
                 return getTickerPrecisionData(pair).then((precisionData) => {
                     const unroundedQuantity = btcInDollars / initialPrice;
-                    const roundedQuantity = createRoundedQuantity(unroundedQuantity, precisionData);
+                    const roundedQuantity = createRoundedQuantity(unroundedQuantity, precisionData, initialPrice);
 
                     const { tickSize } = precisionData;
                     console.log('btc in dollars', btcInDollars);
@@ -288,16 +291,27 @@ const yoloTron5000 = (tickerSymbol) => {
     })
 }
 
-//// TEST FUNCTIONS
-// getSinglePair("BTCUSDT").then(data => console.log(data))
-// getAccountBalance().then(data => console.log(data))
-// getCryptoAmountInDollars("BTC", 100).then(data => console.log(data))
-// getAllPairs();
-// getTickerPrecisionData(shitCoinTicker)
+binance.websockets.userData((err, resp) => {
+    // console.log(resp);
+    // console.log(err);
+}, (err, resp) => {
+    if(err) console.log(err);
+    console.log(resp);
 
-// Get pairs first cause race condition
-getAllPairs().then(() => {
-    yoloTron5000(shitCoinTicker);
+    const status = resp.X;
+    const side = resp.S;
+    const type = resp.o;
+    const quantity = resp.q;
+    const price = resp.p;
+    switch (status) {
+        case "NEW":
+            console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
+        case "CANCELLED":
+        case "REPLACED":
+        case "REJECTED":
+        case "TRADE":
+        case "EXPIRED":
+        default:
+        break;
+    }
 })
-
-
