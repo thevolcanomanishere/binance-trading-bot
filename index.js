@@ -303,9 +303,11 @@ binance.websockets.userData((err, resp) => {
     const type = resp.o;
     const quantity = resp.q;
     const price = resp.p;
+
+    console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
+
     switch (status) {
         case "NEW":
-            console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
         case "CANCELLED":
         case "REPLACED":
         case "REJECTED":
