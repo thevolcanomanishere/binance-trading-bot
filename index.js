@@ -302,7 +302,7 @@ binance.websockets.userData((err, resp) => {
     const side = resp.S;
     const type = resp.o;
     const quantity = resp.q;
-    const price = resp.p;
+    const price = resp.L;
     const pair = resp.s;
 
     console.log(`Order created. SIDE: ${side}\nTYPE: ${type}\nSTATUS: ${status}QUANT: ${quantity}\nPRICE: ${price}`)
@@ -335,7 +335,7 @@ binance.websockets.userData((err, resp) => {
 // const amountInDollarsToBuy = process.argv[2];
 // const shitCoinTicker = process.argv[3];
 
-yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
+// yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
 
 // binance.prevDay("ETHBTC", (error, prevDay, symbol) => {
 //     console.info(symbol+" previous day:", prevDay);
