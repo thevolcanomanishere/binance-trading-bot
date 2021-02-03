@@ -295,9 +295,8 @@ const yoloTron5000 = (tickerSymbol) => {
 binance.websockets.userData((err, resp) => {
     // console.log(resp);
     // console.log(err);
-}, (err, resp) => {
-    if(err) console.log(err);
-    console.log(resp);
+}, (resp) => {
+    console.log('resp', resp);
 
     const status = resp.X;
     const side = resp.S;
