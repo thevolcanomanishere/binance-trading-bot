@@ -144,7 +144,7 @@ const doesPairExistWithBtc = (pair) => {
 
 const setStopLoss = async (orderPrice, pair) => {
   const stopLossPrice = getStopLossPrice(orderPrice, 1);
-  const type = 'STOP_LOSS';
+  const type = 'STOP_LOSS_LIMIT';
   console.log('setStopLoss: settng stop loss at price', stopLossPrice);
   try {
     const sellResponse = await binanceSellAsync(pair, cryptoQuantity, orderPrice, { stopPrice: stopLossPrice, type });
@@ -159,7 +159,7 @@ const setStopLoss = async (orderPrice, pair) => {
     previousStopLossOrderId = sellResponse.orderId;
   } catch (e) {
     console.log('setStopLoss err');
-    console.log(e);
+    console.log(e.body);
   }
 };
 
@@ -302,6 +302,7 @@ const yoloTron5000 = async (tickerSymbol) => {
   await initPairs();
   await yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
 })();
+
 binance.websockets.userData((err, resp) => {
   // console.log(resp);
   // console.log(err);
@@ -325,6 +326,7 @@ binance.websockets.userData((err, resp) => {
     case 'TRADE':
       if (side === 'BUY' && price > 0) {
         try {
+          cryptoQuantity = quantity;
           await setStopLoss(price, pair);
           console.log('binance.websockets.userData setting sell order');
           console.log('binance.websockets.userData pair', pair);
@@ -337,7 +339,6 @@ binance.websockets.userData((err, resp) => {
         } catch (error) {
           console.log('binance.websockets.userData binance.sell error statusCode', error.statusCode);
           console.log('binance.websockets.userData binance.sell error body', error.body);
-          console.log(error);
         }
       } else {
         // ignore ?
