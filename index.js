@@ -6,7 +6,17 @@ const secrets = require('./secrets.json');
 
 // input params
 const amountInDollarsToBuy = process.argv[2];
+if (!amountInDollarsToBuy) {
+  throw new Error('Please pass an amount in dollars for the first param');
+}
 const shitCoinTicker = process.argv[3];
+if (!shitCoinTicker) {
+  throw new Error('Please pass a ticker for the second param');
+}
+const priceMultiplier = process.argv[4];
+if (!priceMultiplier) {
+  throw new Error('Please pass in a price multiplier for the third param');
+}
 
 // Running configs
 let APIKEY;
@@ -331,9 +341,9 @@ binance.websockets.userData((err, resp) => {
           console.log('binance.websockets.userData setting sell order');
           console.log('binance.websockets.userData pair', pair);
           console.log('binance.websockets.userData pair', quantity);
-          console.log('binance.websockets.userData price * 2', price * 2);
-          console.log('binance.websockets.userData stopPrice', (price * 2) - tickSize);
-          const sellResponse = await binanceSellAsync(pair, quantity, price * 2, { stopPrice: (price * 2) - tickSize, type: 'TAKE_PROFIT_LIMIT' });
+          console.log('binance.websockets.userData price * 2', price * priceMultiplier);
+          console.log('binance.websockets.userData stopPrice', (price * priceMultiplier) - tickSize);
+          const sellResponse = await binanceSellAsync(pair, quantity, price * priceMultiplier, { stopPrice: (price * priceMultiplier) - tickSize, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);
         } catch (error) {
