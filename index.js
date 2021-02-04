@@ -1,4 +1,5 @@
 const Binance = require('node-binance-api');
+require('log-timestamp');
 const log = require('single-line-log').stdout;
 const fs = require('fs');
 const util = require('util');
@@ -25,6 +26,7 @@ const DEV = false;
 
 console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
 console.log(`DOLLAR AMOUNT: ${amountInDollarsToBuy}`);
+console.log(`MULTIPLIER: ${priceMultiplier}`);
 console.log(`DEVMODE: ${DEV}`);
 
 if (DEV) {
@@ -62,6 +64,7 @@ let currentCryptoQuantity;
 // runtime vars
 let previousStopLossOrderId = 0;
 let tickSize;
+let precisionData;
 let pairs = {};
 const minimums = {};
 
@@ -99,14 +102,14 @@ const initPairs = async () => {
 const getSinglePair = async (pairTicker) => {
   console.log('getSinglePair: getting pair', pairTicker);
   const data = await binance.prices();
-  console.log('getSinglePair:', data);
+  // console.log('getSinglePair:', data); //takes too long to log out
   return data[pairTicker];
 };
 
 const getAccountBalance = async () => {
   console.log('getAccountBalance: Getting account balance');
   const data = await binance.balance();
-  console.log(data);
+  // console.log(data); takes too long to log out
   return data;
 };
 
@@ -128,7 +131,7 @@ const getCryptoAmountInDollars = async (tickerSymbol, dollarAmount) => {
   if (balance[tickerSymbol] && balance[tickerSymbol].available > 0) {
     const pair = `${tickerSymbol}USDT`;
     const data = await getSinglePair(pair);
-    console.log(`Pair data: ${data}`);
+    // console.log(`Pair data: ${data}`); takes too long to log out
     return dollarAmount / data;
   }
   console.log("You don't have enough balance");
@@ -233,7 +236,7 @@ const yoloTron5000 = async (tickerSymbol) => {
     // calculate how many crypto you can buy with $100 in btc
     const priceInfo = await getPriceInfo(pair);
     const initialPrice = priceInfo.bidPrice;
-    const precisionData = await getTickerPrecisionData(pair);
+    precisionData = await getTickerPrecisionData(pair);
     const unroundedQuantity = btcInDollars / initialPrice;
     const roundedQuantity = createRoundedQuantity(unroundedQuantity, precisionData, initialPrice);
 
@@ -341,8 +344,13 @@ binance.websockets.userData((err, resp) => {
           console.log('binance.websockets.userData setting sell order');
           console.log('binance.websockets.userData pair', pair);
           console.log('binance.websockets.userData pair', quantity);
-          console.log('binance.websockets.userData price * 2', price * priceMultiplier);
+          console.log(`binance.websockets.userData price * ${priceMultiplier}`, price * priceMultiplier);
           console.log('binance.websockets.userData stopPrice', (price * priceMultiplier) - tickSize);
+          const numberOfTicksInQuantity = quantity / tickSize;
+          // TODO: figure out why it says there's no quantity available
+          // Try sell in a loop
+          // [2021-02-04T23:00:37.464Z] binance.websockets.userData binance.sell error body {"code":-2010,"msg":"Account has insufficient balance for requested action."}
+          const quantityToSell = numberOfTicksInQuantity * 0.90;
           const sellResponse = await binanceSellAsync(pair, quantity, price * priceMultiplier, { stopPrice: (price * priceMultiplier) - tickSize, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);

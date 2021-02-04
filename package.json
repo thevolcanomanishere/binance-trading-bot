@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "log-timestamp": "^0.3.0",
     "node-binance-api": "^0.12.4",
     "single-line-log": "^1.1.2"
   },
