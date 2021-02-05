@@ -57,15 +57,12 @@ const binance = new Binance().options({
 
 // Track how much we have bought. Subtract each time there is a sale
 let CRYPTO_QUANTITY_BOUGHT;
-let initialCryptoQuantity;
-let currentCryptoQuantity;
 
 // runtime vars
 let PREVIOUS_STOP_LOSS_ORDER_ID = 0;
 let TICK_SIZE;
 let PRECISION_DATA;
 let PAIRS = {};
-const minimums = {};
 
 const getStopLossPrice = (orderPrice, percentage) => {
   console.log(`getStopLossPrice: orderPrice: ${orderPrice}, percentage: ${percentage}`);
@@ -132,15 +129,6 @@ const getCryptoAmountInDollars = async (tickerSymbol, dollarAmount) => {
   return null;
 };
 
-// const subscribeToTrades = (tickerSymbolPair) => {
-//   binance.websockets.trades([tickerSymbolPair], (trades) => {
-//     const {
-//       e: eventType, E: eventTime, s: symbol, p: price, q: quantity, m: maker, a: tradeId,
-//     } = trades;
-//     console.info(`${symbol} trade update. price: ${price}, quantity: ${quantity}, maker: ${maker}`);
-//   });
-// };
-
 const doesPairExistWithBtc = (pair) => {
   console.log(`doesPairExistWithBtc: Checking ${pair} exists in PAIRS`);
   if (PAIRS[pair]) {
@@ -177,25 +165,6 @@ const getTickerPrecisionData = async (ticker) => {
   console.log('getTickerPrecisionData: symbol data', symbolData);
   return symbolData;
 };
-
-// const generateRoundedQuantity = (btcInDollars, initialPrice, PRECISION_DATA) => {
-//   // https://github.com/jaggedsoft/node-binance-api/blob/master/examples/advanced.md
-//   const { minQty, minNotional, stepSize } = PRECISION_DATA;
-
-//   let amount = (btcInDollars / initialPrice);
-//   // Set minimum order amount with minQty
-//   if (amount < minQty) {
-//     return amount = minQty;
-//   }
-
-//   // Set minimum order amount with minNotional
-//   if (initialPrice * amount < minNotional) {
-//     return amount = minNotional / initialPrice;
-//   }
-
-//   // Round to stepSize
-//   return amount = binance.roundStep(amount, stepSize);
-// };
 
 const createRoundedQuantity = (unroundedQuantity, price) => {
   const { minQty, stepSize } = PRECISION_DATA.filters.find((f) => f.filterType === 'LOT_SIZE');
