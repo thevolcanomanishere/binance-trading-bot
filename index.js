@@ -2,7 +2,6 @@ const Binance = require('node-binance-api');
 require('log-timestamp');
 const log = require('single-line-log').stdout;
 const fs = require('fs');
-const util = require('util');
 const secrets = require('./secrets.json');
 
 // input params
@@ -14,9 +13,9 @@ const SHITCOIN_TICKER = process.argv[3];
 if (!SHITCOIN_TICKER) {
   throw new Error('Please pass a ticker for the second param');
 }
-const PRICE_MULTIPLIER = process.argv[4];
-if (!PRICE_MULTIPLIER) {
-  throw new Error('Please pass in a price multiplier for the third param');
+const PRICE_PERCENTAGE_MULTIPLIER = process.argv[4];
+if (!PRICE_PERCENTAGE_MULTIPLIER) {
+  throw new Error('Please pass in a price percentage multiplier for the third param');
 }
 
 // Running configs
@@ -26,7 +25,7 @@ const DEV = false;
 
 console.log(`SHITCOIN SELECTED: ${SHITCOIN_TICKER}`);
 console.log(`DOLLAR AMOUNT: ${AMOUNT_IN_DOLLARS_TO_BUY}`);
-console.log(`MULTIPLIER: ${PRICE_MULTIPLIER}`);
+console.log(`MULTIPLIER: ${PRICE_PERCENTAGE_MULTIPLIER}`);
 console.log(`DEVMODE: ${DEV}`);
 
 if (DEV) {
@@ -68,11 +67,6 @@ let PRECISION_DATA;
 let PAIRS = {};
 const minimums = {};
 
-// promisifyied methods
-const binanceMarketBuyAsync = util.promisify(binance.marketBuy);
-const binanceSellAsync = util.promisify(binance.sell);
-const binanceCancelAsync = util.promisify(binance.cancel);
-
 const getStopLossPrice = (orderPrice, percentage) => {
   console.log(`getStopLossPrice: orderPrice: ${orderPrice}, percentage: ${percentage}`);
   const onePercent = orderPrice / 100;
@@ -88,7 +82,7 @@ const getLimitOrderPrice = (orderPrice, percentage) => {
   console.log(`getLimitOrderPrice: orderPrice: ${orderPrice}, percentage: ${percentage}`);
   const onePercent = orderPrice / 100;
   const priceDiff = onePercent * percentage;
-  const unrounded = orderPrice + priceDiff;
+  const unrounded = parseFloat(orderPrice) + parseFloat(priceDiff);
   console.log(`getLimitOrderPrice: Unrounded Limit Order Price: ${unrounded}`);
   const rounded = binance.roundTicks(unrounded, TICK_SIZE);
   console.log(`getLimitOrderPrice: Rounded Limit Order Price: ${rounded}`);
@@ -156,16 +150,16 @@ const doesPairExistWithBtc = (pair) => {
 };
 
 const setStopLoss = async (orderPrice, pair) => {
-  const stopLossPrice = getStopLossPrice(orderPrice, 1);
+  const stopLossPrice = getStopLossPrice(orderPrice, 2);
   const type = 'STOP_LOSS_LIMIT';
   console.log('setStopLoss: settng stop loss at price', stopLossPrice);
   try {
-    const sellResponse = await binanceSellAsync(pair, CRYPTO_QUANTITY_BOUGHT, orderPrice, { stopPrice: stopLossPrice, type });
+    const sellResponse = await binance.sell(pair, CRYPTO_QUANTITY_BOUGHT, orderPrice, { stopPrice: stopLossPrice, type });
     console.log('setStopLoss response');
     console.log(sellResponse);
     if (PREVIOUS_STOP_LOSS_ORDER_ID !== 0) {
       console.log('setStopLoss: PREVIOUS_STOP_LOSS_ORDER_ID exists. cancelling old stop loss', PREVIOUS_STOP_LOSS_ORDER_ID);
-      const cancelResponse = await binanceCancelAsync(pair, PREVIOUS_STOP_LOSS_ORDER_ID);
+      const cancelResponse = await binance.cancel(pair, PREVIOUS_STOP_LOSS_ORDER_ID);
       console.log('setStopLoss: cancelResponse');
       console.log(cancelResponse);
     }
@@ -206,7 +200,11 @@ const getTickerPrecisionData = async (ticker) => {
 const createRoundedQuantity = (unroundedQuantity, price) => {
   const { minQty, stepSize } = PRECISION_DATA.filters.find((f) => f.filterType === 'LOT_SIZE');
   const { minNotional } = PRECISION_DATA.filters.find((f) => f.filterType === 'MIN_NOTIONAL');
-
+  console.log('createRoundedQuantity: minQty', minQty);
+  console.log('createRoundedQuantity: unroundedQuantity', unroundedQuantity);
+  console.log('createRoundedQuantity: price', price);
+  console.log('createRoundedQuantity: stepSize', stepSize);
+  console.log('createRoundedQuantity: minNotional', minNotional);
   if (unroundedQuantity < minQty) {
     return minQty;
   }
@@ -246,12 +244,12 @@ const yoloTron5000 = async (tickerSymbol) => {
     console.log('yoloTron5000: buying quantity', roundedQuantity);
     console.log('yoloTron5000: initialPrice', initialPrice);
     initialCryptoQuantity = roundedQuantity;
-    const marketBuyRespons = await binanceMarketBuyAsync(pair, roundedQuantity);
+    const marketBuyRespons = await binance.marketBuy(pair, roundedQuantity);
     console.log('yoloTron5000: marketBuyRespons');
     console.log(marketBuyRespons);
   } catch (error) {
     console.log('yoloTron5000: err');
-    console.log(error);
+    console.log(error.body);
   }
   // return binance.buy(pair, roundedQuantity, initialPrice, {type:'LIMIT' }, (error, response) => {
   //     console.log('binance.buy response', response);
@@ -341,22 +339,34 @@ binance.websockets.userData((err, resp) => {
         try {
           CRYPTO_QUANTITY_BOUGHT = quantity;
           await setStopLoss(price, pair);
+
+          // price and stopPrice have to be differnet for some reason
+          const stopPrice = getLimitOrderPrice(price, PRICE_PERCENTAGE_MULTIPLIER);
+          // const sellPrice = price * PRICE_PERCENTAGE_MULTIPLIER;
+          // const numberOfTicksInPrice = sellPrice / TICK_SIZE;
+          // const fivePercentOfTicks = numberOfTicksInPrice * 0.05;
+          // const stopPrice = binance.roundTicks(sellPrice - (TICK_SIZE * fivePercentOfTicks), TICK_SIZE);
+
+          // https://github.com/jaggedsoft/node-binance-api/issues/304
+          // const unroundedQuantity = quantity * 0.95; // to avoid "Account has insufficient balance for requested action"
+          // const unroundedQuantity = CRYPTO_QUANTITY_BOUGHT * 0.90; // to avoid "Account has insufficient balance for requested action"
+          // const roundedQuantity = createRoundedQuantity(unroundedQuantity, price);
           console.log('binance.websockets.userData setting sell order');
           console.log('binance.websockets.userData pair', pair);
-          console.log('binance.websockets.userData pair', quantity);
-          console.log(`binance.websockets.userData price * ${PRICE_MULTIPLIER}`, price * PRICE_MULTIPLIER);
-          console.log('binance.websockets.userData stopPrice', (price * PRICE_MULTIPLIER) - TICK_SIZE);
-          // TODO: figure out why it says there's no quantity available
-          // Try sell in a loop
-          // [2021-02-04T23:00:37.464Z] binance.websockets.userData binance.sell error body {"code":-2010,"msg":"Account has insufficient balance for requested action."}
-          const unroundedQuantity = quantity * 0.95;
-          const roundedQuantity = createRoundedQuantity(unroundedQuantity, price);
-          const sellResponse = await binanceSellAsync(pair, roundedQuantity, price * PRICE_MULTIPLIER, { stopPrice: (price * PRICE_MULTIPLIER) - TICK_SIZE, type: 'TAKE_PROFIT_LIMIT' });
+          console.log('binance.websockets.userData quantity', quantity);
+          // console.log('binance.websockets.userData rounded quantty', roundedQuantity);
+          console.log('binance.websockets.userData stopPrice', stopPrice);
+          // console.log('binance.websockets.userData stopPrice', stopPrice);
+          const sellResponse = await binance.sell(pair, quantity, stopPrice, { stopPrice, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);
         } catch (error) {
-          console.log('binance.websockets.userData binance.sell error statusCode', error.statusCode);
-          console.log('binance.websockets.userData binance.sell error body', error.body);
+          if (error.body) {
+            console.log('binance.websockets.userData binance.sell error statusCode', error.statusCode);
+            console.log('binance.websockets.userData binance.sell error body', error.body);
+          } else {
+            console.log(error);
+          }
         }
       } else {
         // ignore ?
