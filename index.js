@@ -346,12 +346,12 @@ binance.websockets.userData((err, resp) => {
           console.log('binance.websockets.userData pair', quantity);
           console.log(`binance.websockets.userData price * ${PRICE_MULTIPLIER}`, price * PRICE_MULTIPLIER);
           console.log('binance.websockets.userData stopPrice', (price * PRICE_MULTIPLIER) - TICK_SIZE);
-          const numberOfTicksInQuantity = quantity / TICK_SIZE;
           // TODO: figure out why it says there's no quantity available
           // Try sell in a loop
           // [2021-02-04T23:00:37.464Z] binance.websockets.userData binance.sell error body {"code":-2010,"msg":"Account has insufficient balance for requested action."}
-          const roundedQuantity = createRoundedQuantity(quantity, price)
-          const sellResponse = await binanceSellAsync(pair, quantity, price * PRICE_MULTIPLIER, { stopPrice: (price * PRICE_MULTIPLIER) - TICK_SIZE, type: 'TAKE_PROFIT_LIMIT' });
+          const unroundedQuantity = quantity * 0.95;
+          const roundedQuantity = createRoundedQuantity(unroundedQuantity, price);
+          const sellResponse = await binanceSellAsync(pair, roundedQuantity, price * PRICE_MULTIPLIER, { stopPrice: (price * PRICE_MULTIPLIER) - TICK_SIZE, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);
         } catch (error) {
