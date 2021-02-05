@@ -154,7 +154,7 @@ const setStopLoss = async (orderPrice, pair) => {
   const type = 'STOP_LOSS_LIMIT';
   console.log('setStopLoss: settng stop loss at price', stopLossPrice);
   try {
-    const sellResponse = await binance.sell(pair, CRYPTO_QUANTITY_BOUGHT, orderPrice, { stopPrice: stopLossPrice, type });
+    const sellResponse = await binance.sell(pair, CRYPTO_QUANTITY_BOUGHT / 2, orderPrice, { stopPrice: stopLossPrice, type });
     console.log('setStopLoss response');
     console.log(sellResponse);
     if (PREVIOUS_STOP_LOSS_ORDER_ID !== 0) {
@@ -320,6 +320,7 @@ binance.websockets.userData((err, resp) => {
 }, async (resp) => {
   console.log('resp', resp);
 
+  // https://github.com/binance/binance-spot-api-docs/blob/master/user-data-stream.md
   const status = resp.x;
   const side = resp.S;
   const type = resp.o;
@@ -357,7 +358,7 @@ binance.websockets.userData((err, resp) => {
           // console.log('binance.websockets.userData rounded quantty', roundedQuantity);
           console.log('binance.websockets.userData stopPrice', stopPrice);
           // console.log('binance.websockets.userData stopPrice', stopPrice);
-          const sellResponse = await binance.sell(pair, quantity, stopPrice, { stopPrice, type: 'TAKE_PROFIT_LIMIT' });
+          const sellResponse = await binance.sell(pair, quantity / 2, stopPrice, { stopPrice, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);
         } catch (error) {
