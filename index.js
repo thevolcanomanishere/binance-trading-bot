@@ -6,16 +6,16 @@ const util = require('util');
 const secrets = require('./secrets.json');
 
 // input params
-const amountInDollarsToBuy = process.argv[2];
-if (!amountInDollarsToBuy) {
+const AMOUNT_IN_DOLLARS_TO_BUY = process.argv[2];
+if (!AMOUNT_IN_DOLLARS_TO_BUY) {
   throw new Error('Please pass an amount in dollars for the first param');
 }
-const shitCoinTicker = process.argv[3];
-if (!shitCoinTicker) {
+const SHITCOIN_TICKER = process.argv[3];
+if (!SHITCOIN_TICKER) {
   throw new Error('Please pass a ticker for the second param');
 }
-const priceMultiplier = process.argv[4];
-if (!priceMultiplier) {
+const PRICE_MULTIPLIER = process.argv[4];
+if (!PRICE_MULTIPLIER) {
   throw new Error('Please pass in a price multiplier for the third param');
 }
 
@@ -24,9 +24,9 @@ let APIKEY;
 let APISECRET;
 const DEV = false;
 
-console.log(`SHITCOIN SELECTED: ${shitCoinTicker}`);
-console.log(`DOLLAR AMOUNT: ${amountInDollarsToBuy}`);
-console.log(`MULTIPLIER: ${priceMultiplier}`);
+console.log(`SHITCOIN SELECTED: ${SHITCOIN_TICKER}`);
+console.log(`DOLLAR AMOUNT: ${AMOUNT_IN_DOLLARS_TO_BUY}`);
+console.log(`MULTIPLIER: ${PRICE_MULTIPLIER}`);
 console.log(`DEVMODE: ${DEV}`);
 
 if (DEV) {
@@ -57,15 +57,15 @@ const binance = new Binance().options({
 });
 
 // Track how much we have bought. Subtract each time there is a sale
-let cryptoQuantity;
+let CRYPTO_QUANTITY_BOUGHT;
 let initialCryptoQuantity;
 let currentCryptoQuantity;
 
 // runtime vars
-let previousStopLossOrderId = 0;
-let tickSize;
-let precisionData;
-let pairs = {};
+let PREVIOUS_STOP_LOSS_ORDER_ID = 0;
+let TICK_SIZE;
+let PRECISION_DATA;
+let PAIRS = {};
 const minimums = {};
 
 // promisifyied methods
@@ -79,7 +79,7 @@ const getStopLossPrice = (orderPrice, percentage) => {
   const priceDiff = onePercent * percentage;
   const unrounded = orderPrice - priceDiff;
   console.log(`getStopLossPrice: Unrounded Stop Loss Price: ${unrounded}`);
-  const rounded = binance.roundTicks(unrounded, tickSize);
+  const rounded = binance.roundTicks(unrounded, TICK_SIZE);
   console.log(`getStopLossPrice: Rounded Stop Loss Price: ${rounded}`);
   return rounded;
 };
@@ -90,13 +90,13 @@ const getLimitOrderPrice = (orderPrice, percentage) => {
   const priceDiff = onePercent * percentage;
   const unrounded = orderPrice + priceDiff;
   console.log(`getLimitOrderPrice: Unrounded Limit Order Price: ${unrounded}`);
-  const rounded = binance.roundTicks(unrounded, tickSize);
+  const rounded = binance.roundTicks(unrounded, TICK_SIZE);
   console.log(`getLimitOrderPrice: Rounded Limit Order Price: ${rounded}`);
   return rounded;
 };
 
 const initPairs = async () => {
-  pairs = await binance.prices();
+  PAIRS = await binance.prices();
 };
 
 const getSinglePair = async (pairTicker) => {
@@ -148,8 +148,8 @@ const getCryptoAmountInDollars = async (tickerSymbol, dollarAmount) => {
 // };
 
 const doesPairExistWithBtc = (pair) => {
-  console.log(`doesPairExistWithBtc: Checking ${pair} exists in pairs`);
-  if (pairs[pair]) {
+  console.log(`doesPairExistWithBtc: Checking ${pair} exists in PAIRS`);
+  if (PAIRS[pair]) {
     return true;
   }
   return false;
@@ -160,16 +160,16 @@ const setStopLoss = async (orderPrice, pair) => {
   const type = 'STOP_LOSS_LIMIT';
   console.log('setStopLoss: settng stop loss at price', stopLossPrice);
   try {
-    const sellResponse = await binanceSellAsync(pair, cryptoQuantity, orderPrice, { stopPrice: stopLossPrice, type });
+    const sellResponse = await binanceSellAsync(pair, CRYPTO_QUANTITY_BOUGHT, orderPrice, { stopPrice: stopLossPrice, type });
     console.log('setStopLoss response');
     console.log(sellResponse);
-    if (previousStopLossOrderId !== 0) {
-      console.log('setStopLoss: previousStopLossOrderId exists. cancelling old stop loss', previousStopLossOrderId);
-      const cancelResponse = await binanceCancelAsync(pair, previousStopLossOrderId);
+    if (PREVIOUS_STOP_LOSS_ORDER_ID !== 0) {
+      console.log('setStopLoss: PREVIOUS_STOP_LOSS_ORDER_ID exists. cancelling old stop loss', PREVIOUS_STOP_LOSS_ORDER_ID);
+      const cancelResponse = await binanceCancelAsync(pair, PREVIOUS_STOP_LOSS_ORDER_ID);
       console.log('setStopLoss: cancelResponse');
       console.log(cancelResponse);
     }
-    previousStopLossOrderId = sellResponse.orderId;
+    PREVIOUS_STOP_LOSS_ORDER_ID = sellResponse.orderId;
   } catch (e) {
     console.log('setStopLoss err');
     console.log(e.body);
@@ -184,9 +184,9 @@ const getTickerPrecisionData = async (ticker) => {
   return symbolData;
 };
 
-// const generateRoundedQuantity = (btcInDollars, initialPrice, precisionData) => {
+// const generateRoundedQuantity = (btcInDollars, initialPrice, PRECISION_DATA) => {
 //   // https://github.com/jaggedsoft/node-binance-api/blob/master/examples/advanced.md
-//   const { minQty, minNotional, stepSize } = precisionData;
+//   const { minQty, minNotional, stepSize } = PRECISION_DATA;
 
 //   let amount = (btcInDollars / initialPrice);
 //   // Set minimum order amount with minQty
@@ -203,9 +203,9 @@ const getTickerPrecisionData = async (ticker) => {
 //   return amount = binance.roundStep(amount, stepSize);
 // };
 
-const createRoundedQuantity = (unroundedQuantity, precisionData, price) => {
-  const { minQty, stepSize } = precisionData.filters.find((f) => f.filterType === 'LOT_SIZE');
-  const { minNotional } = precisionData.filters.find((f) => f.filterType === 'MIN_NOTIONAL');
+const createRoundedQuantity = (unroundedQuantity, price) => {
+  const { minQty, stepSize } = PRECISION_DATA.filters.find((f) => f.filterType === 'LOT_SIZE');
+  const { minNotional } = PRECISION_DATA.filters.find((f) => f.filterType === 'MIN_NOTIONAL');
 
   if (unroundedQuantity < minQty) {
     return minQty;
@@ -225,7 +225,7 @@ const createRoundedQuantity = (unroundedQuantity, precisionData, price) => {
 const yoloTron5000 = async (tickerSymbol) => {
   try {
     // Find out how much $100 is in btc'
-    const btcInDollars = await getCryptoAmountInDollars('BTC', amountInDollarsToBuy);
+    const btcInDollars = await getCryptoAmountInDollars('BTC', AMOUNT_IN_DOLLARS_TO_BUY);
     const pair = `${tickerSymbol}BTC`;
     // Check if the input ticker is valid
     if (!doesPairExistWithBtc(pair)) {
@@ -236,11 +236,11 @@ const yoloTron5000 = async (tickerSymbol) => {
     // calculate how many crypto you can buy with $100 in btc
     const priceInfo = await getPriceInfo(pair);
     const initialPrice = priceInfo.bidPrice;
-    precisionData = await getTickerPrecisionData(pair);
+    PRECISION_DATA = await getTickerPrecisionData(pair);
     const unroundedQuantity = btcInDollars / initialPrice;
-    const roundedQuantity = createRoundedQuantity(unroundedQuantity, precisionData, initialPrice);
+    const roundedQuantity = createRoundedQuantity(unroundedQuantity, initialPrice);
 
-    tickSize = precisionData.filters.find((f) => f.filterType === 'PRICE_FILTER').tickSize;
+    TICK_SIZE = PRECISION_DATA.filters.find((f) => f.filterType === 'PRICE_FILTER').tickSize;
     console.log('yoloTron5000: btc in dollars', btcInDollars);
     console.log('yoloTron5000: buying pair', pair);
     console.log('yoloTron5000: buying quantity', roundedQuantity);
@@ -264,7 +264,7 @@ const yoloTron5000 = async (tickerSymbol) => {
   //         initialCryptoQuantity = response.executedQty;
   //         // Setup profit taking and stop losses in callbacks
   //         let profitPrice = getLimitOrderPrice(initialPrice, 2, tickSize);
-  //         let roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
+  //         let roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, PRECISION_DATA, initialPrice);
   //         binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
   //             if (error) {
   //                 console.log('binance.sell error statusCode', error.statusCode);
@@ -277,7 +277,7 @@ const yoloTron5000 = async (tickerSymbol) => {
   //         });
 
   //         profitPrice = getLimitOrderPrice(initialPrice, 4, tickSize);
-  //         roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, precisionData, initialPrice);
+  //         roundedQuantity = createRoundedQuantity(initialCryptoQuantity * 0.5, PRECISION_DATA, initialPrice);
   //         return binance.sell(pair, roundedQuantity, profitPrice, {type:'TAKE_PROFIT_LIMIT'}, (error, response) => {
   //             if (error) {
   //                 console.log('binance.sell error statusCode', error.statusCode);
@@ -313,7 +313,7 @@ const yoloTron5000 = async (tickerSymbol) => {
 
 (async () => {
   await initPairs();
-  await yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
+  await yoloTron5000(SHITCOIN_TICKER, AMOUNT_IN_DOLLARS_TO_BUY);
 })();
 
 binance.websockets.userData((err, resp) => {
@@ -339,19 +339,19 @@ binance.websockets.userData((err, resp) => {
     case 'TRADE':
       if (side === 'BUY' && price > 0) {
         try {
-          cryptoQuantity = quantity;
+          CRYPTO_QUANTITY_BOUGHT = quantity;
           await setStopLoss(price, pair);
           console.log('binance.websockets.userData setting sell order');
           console.log('binance.websockets.userData pair', pair);
           console.log('binance.websockets.userData pair', quantity);
-          console.log(`binance.websockets.userData price * ${priceMultiplier}`, price * priceMultiplier);
-          console.log('binance.websockets.userData stopPrice', (price * priceMultiplier) - tickSize);
-          const numberOfTicksInQuantity = quantity / tickSize;
+          console.log(`binance.websockets.userData price * ${PRICE_MULTIPLIER}`, price * PRICE_MULTIPLIER);
+          console.log('binance.websockets.userData stopPrice', (price * PRICE_MULTIPLIER) - TICK_SIZE);
+          const numberOfTicksInQuantity = quantity / TICK_SIZE;
           // TODO: figure out why it says there's no quantity available
           // Try sell in a loop
           // [2021-02-04T23:00:37.464Z] binance.websockets.userData binance.sell error body {"code":-2010,"msg":"Account has insufficient balance for requested action."}
-          const quantityToSell = numberOfTicksInQuantity * 0.90;
-          const sellResponse = await binanceSellAsync(pair, quantity, price * priceMultiplier, { stopPrice: (price * priceMultiplier) - tickSize, type: 'TAKE_PROFIT_LIMIT' });
+          const roundedQuantity = createRoundedQuantity(quantity, price)
+          const sellResponse = await binanceSellAsync(pair, quantity, price * PRICE_MULTIPLIER, { stopPrice: (price * PRICE_MULTIPLIER) - TICK_SIZE, type: 'TAKE_PROFIT_LIMIT' });
           console.log('binance.websockets.userData binance.sell response:');
           console.log(sellResponse);
         } catch (error) {
@@ -367,10 +367,10 @@ binance.websockets.userData((err, resp) => {
   }
 });
 
-// const amountInDollarsToBuy = process.argv[2];
-// const shitCoinTicker = process.argv[3];
+// const AMOUNT_IN_DOLLARS_TO_BUY = process.argv[2];
+// const SHITCOIN_TICKER = process.argv[3];
 
-// yoloTron5000(shitCoinTicker, amountInDollarsToBuy);
+// yoloTron5000(SHITCOIN_TICKER, AMOUNT_IN_DOLLARS_TO_BUY);
 
 // binance.prevDay("ETHBTC", (error, prevDay, symbol) => {
 //     console.info(symbol+" previous day:", prevDay);
